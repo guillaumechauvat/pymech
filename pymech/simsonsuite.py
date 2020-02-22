@@ -5,11 +5,11 @@
 #                                                                             #
 # Authors: Jacopo Canton, Nicolo' Fabbiane                                    #
 # Contacts: jcanton(at)mech.kth.se, nicolo(at)mech.kth.se                     #
-# Last edit: 2015-10-19                                                       #
+# Last edit: 2020-02-19                                                       #
 #=============================================================================#
 import struct
 import numpy as np
-import exadata as exdat
+import pymech.exadata as exdat
 
 #==============================================================================
 def readdns(fname):

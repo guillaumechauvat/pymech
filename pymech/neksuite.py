@@ -3,13 +3,13 @@
 #                                                                             #
 # A python module for reading and writing nek5000 files                       #
 #                                                                             #
-# Authors: Jacopo Canton, Nicolo' Fabbiane                                    #
-# Contacts: jcanton(at)mech.kth.se, nicolo(at)mech.kth.se                     #
-# Last edit: 2015-10-19                                                       #
+# Authors: Jacopo Canton, Nicolo' Fabbiane, Guillaume Chauvat                 #
+# Contacts: jacopo.canton(at)gmail.com                                        #
+# Last edit: 2020-02-21                                                       #
 #=============================================================================#
 import struct
 import numpy as np
-import exadata as exdat
+import pymech.exadata as exdat
 
 
 #==============================================================================
@@ -115,7 +115,7 @@ def readnek(fname):
 	#---------------------------------------------------------------------------
 	#
 	# initialize data structure
-	data = exdat.exadata(ndim, nel, lr1, var)
+	data = exdat.exadata(ndim, nel, lr1, var, 0)
 	data.time   = time
 	data.istep  = istep
 	data.wdsz   = wdsz
@@ -382,6 +382,19 @@ def readrea(fname):
 		#return -1
 	#
 	#---------------------------------------------------------------------------
+	# count the number of boundary conditions
+	# (it's too dangerous to infer it from the header)
+	#---------------------------------------------------------------------------
+	#
+	nbc = 0
+	for line in infile:
+		line_split = line.split()
+		if 'BOUNDARY' in line_split[2:] and not 'NO' in line_split:
+			nbc = nbc + 1
+	
+	infile.seek(0)
+	#
+	#---------------------------------------------------------------------------
 	# READ HEADER (2 lines) + ndim + number of parameters
 	#---------------------------------------------------------------------------
 	#
@@ -404,8 +417,8 @@ def readrea(fname):
 	# skip passive scalars
 	#---------------------------------------------------------------------------
 	#
-	npscal = int(infile.readline().split()[0])
-	for ipscal in range(npscal):
+	npscal_data = int(infile.readline().split()[0])
+	for ipscal in range(npscal_data):
 		infile.readline()
 	#
 	#---------------------------------------------------------------------------
@@ -433,7 +446,7 @@ def readrea(fname):
 	lr1 = [2, 2, ndim-1]
 	var = [ndim, 0, 0, 0, 0]
 	#
-	data = exdat.exadata(ndim, nel, lr1, var)
+	data = exdat.exadata(ndim, nel, lr1, var, nbc)
 	#
 	# read geometry
 	data.lims.pos[:,0] =  float('inf')
@@ -490,38 +503,40 @@ def readrea(fname):
 	# BOUNDARY CONDITIONS
 	#---------------------------------------------------------------------------
 	#
-	infile.readline()
-	infile.readline()
-	for iel in range(nel):
-		for iface in range(nface):
-			line = infile.readline()
-			if (nel < 1e3):
-				data.elem[iel].bcs[iface][0] = line[1:3].strip()
-				data.elem[iel].bcs[iface][1] = int(line[4:7])
-				data.elem[iel].bcs[iface][2] = int(line[7:10])
-				data.elem[iel].bcs[iface][3] = float(line[10:24])
-				data.elem[iel].bcs[iface][4] = float(line[24:38])
-				data.elem[iel].bcs[iface][5] = float(line[38:52])
-				data.elem[iel].bcs[iface][6] = float(line[52:66])
-				data.elem[iel].bcs[iface][7] = float(line[66:80])
-			elif (nel < 1e6):
-				data.elem[iel].bcs[iface][0] = line[1:3].strip()
-				data.elem[iel].bcs[iface][1] = iel
-				data.elem[iel].bcs[iface][2] = iface + 1
-				data.elem[iel].bcs[iface][3] = float(line[10:24])
-				data.elem[iel].bcs[iface][4] = float(line[24:38])
-				data.elem[iel].bcs[iface][5] = float(line[38:52])
-				data.elem[iel].bcs[iface][6] = float(line[52:66])
-				data.elem[iel].bcs[iface][7] = float(line[66:80])
-			else:
-				data.elem[iel].bcs[iface][0] = line[1:3].strip()
-				data.elem[iel].bcs[iface][1] = int(line[4:15])
-				data.elem[iel].bcs[iface][2] = int(line[15:16])
-				data.elem[iel].bcs[iface][3] = float(line[16:34])
-				data.elem[iel].bcs[iface][4] = float(line[34:52])
-				data.elem[iel].bcs[iface][5] = float(line[52:70])
-				data.elem[iel].bcs[iface][6] = float(line[70:88])
-				data.elem[iel].bcs[iface][7] = float(line[88:106])
+	infile.readline()  # ***** BOUNDARY CONDITIONS *****
+	for ibc in range(nbc):
+		infile.readline()  # ***** FLUID   BOUNDARY CONDITIONS ***** [or similar]
+		for iel in range(nel):
+			for iface in range(nface):
+				line = infile.readline()
+				if (nel < 1e3):
+					data.elem[iel].bcs[ibc, iface][0] = line[1:3].strip()
+					data.elem[iel].bcs[ibc, iface][1] = int(line[4:7])
+					data.elem[iel].bcs[ibc, iface][2] = int(line[7:10])
+					data.elem[iel].bcs[ibc, iface][3] = float(line[10:24])
+					data.elem[iel].bcs[ibc, iface][4] = float(line[24:38])
+					data.elem[iel].bcs[ibc, iface][5] = float(line[38:52])
+					data.elem[iel].bcs[ibc, iface][6] = float(line[52:66])
+					data.elem[iel].bcs[ibc, iface][7] = float(line[66:80])
+				elif (nel < 1e6):
+					data.elem[iel].bcs[ibc, iface][0] = line[1:3].strip()
+					data.elem[iel].bcs[ibc, iface][1] = iel
+					data.elem[iel].bcs[ibc, iface][2] = iface + 1
+					data.elem[iel].bcs[ibc, iface][3] = float(line[10:24])
+					data.elem[iel].bcs[ibc, iface][4] = float(line[24:38])
+					data.elem[iel].bcs[ibc, iface][5] = float(line[38:52])
+					data.elem[iel].bcs[ibc, iface][6] = float(line[52:66])
+					data.elem[iel].bcs[ibc, iface][7] = float(line[66:80])
+				else:
+					data.elem[iel].bcs[ibc, iface][0] = line[1:3].strip()
+					data.elem[iel].bcs[ibc, iface][1] = int(line[4:15])
+					data.elem[iel].bcs[ibc, iface][2] = int(line[15:16])
+					data.elem[iel].bcs[ibc, iface][3] = float(line[16:34])
+					data.elem[iel].bcs[ibc, iface][4] = float(line[34:52])
+					data.elem[iel].bcs[ibc, iface][5] = float(line[52:70])
+					data.elem[iel].bcs[ibc, iface][6] = float(line[70:88])
+					data.elem[iel].bcs[ibc, iface][7] = float(line[88:106])
+		ibc = ibc + 1
 	#
 	#---------------------------------------------------------------------------
 	# FORGET ABOUT WHAT FOLLOWS
@@ -742,19 +757,25 @@ def writerea(fname, data):
 	# boundary conditions data
 	outfile.write('  ***** BOUNDARY CONDITIONS *****\n')
 	outfile.write('  ***** FLUID BOUNDARY CONDITIONS *****\n')
-	for iel in range(data.nel):
-		for iface in range(2*data.ndim):
-			if (data.nel < 1e3):
-				outfile.write(' {0:2s} {1:3d}{2:3d}{3:14.6e}{4:14.6e}{5:14.6e}{6:14.6e}{7:14.6e}\n'.format(
-					data.elem[iel].bcs[iface][0], data.elem[iel].bcs[iface][1], data.elem[iel].bcs[iface][2], data.elem[iel].bcs[iface][3], data.elem[iel].bcs[iface][4], data.elem[iel].bcs[iface][5], data.elem[iel].bcs[iface][6], data.elem[iel].bcs[iface][7]))
-			elif (data.nel < 1e6):
-				outfile.write(' {0:2s} {1:6d}{2:14.6e}{3:14.6e}{4:14.6e}{5:14.6e}{6:14.6e}\n'.format(
-					data.elem[iel].bcs[iface][0], data.elem[iel].bcs[iface][1], data.elem[iel].bcs[iface][3], data.elem[iel].bcs[iface][4], data.elem[iel].bcs[iface][5], data.elem[iel].bcs[iface][6], data.elem[iel].bcs[iface][7]))
-			else:
-				outfile.write(' {0:2s} {1:11d}{2:1d}{3:18.11e}{4:18.11e}{5:18.11e}{6:18.11e}{7:18.11e}\n'.format(
-					data.elem[iel].bcs[iface][0], data.elem[iel].bcs[iface][1], data.elem[iel].bcs[iface][2], data.elem[iel].bcs[iface][3], data.elem[iel].bcs[iface][4], data.elem[iel].bcs[iface][5], data.elem[iel].bcs[iface][6], data.elem[iel].bcs[iface][7]))
+	for ibc in range(data.nbc):
+		if ibc == 1:
+			outfile.write('  ***** THERMAL BOUNDARY CONDITIONS *****\n')
+		elif ibc > 1:
+			outfile.write('  ***** PASSIVE SCALAR {:4d} BOUNDARY CONDITIONS *****\n'.format(ibc-1))
+		for iel in range(data.nel):
+			for iface in range(2*data.ndim):
+				if (data.nel < 1e3):
+					outfile.write(' {0:2s} {1:3d}{2:3d}{3:14.6e}{4:14.6e}{5:14.6e}{6:14.6e}{7:14.6e}\n'.format(
+						data.elem[iel].bcs[ibc, iface][0], data.elem[iel].bcs[ibc, iface][1], data.elem[iel].bcs[ibc, iface][2], data.elem[iel].bcs[ibc, iface][3], data.elem[iel].bcs[ibc, iface][4], data.elem[iel].bcs[ibc, iface][5], data.elem[iel].bcs[ibc, iface][6], data.elem[iel].bcs[ibc, iface][7]))
+				elif (data.nel < 1e6):
+					outfile.write(' {0:2s} {1:6d}{2:14.6e}{3:14.6e}{4:14.6e}{5:14.6e}{6:14.6e}\n'.format(
+						data.elem[iel].bcs[ibc, iface][0], data.elem[iel].bcs[ibc, iface][1], data.elem[iel].bcs[ibc, iface][3], data.elem[iel].bcs[ibc, iface][4], data.elem[iel].bcs[ibc, iface][5], data.elem[iel].bcs[ibc, iface][6], data.elem[iel].bcs[ibc, iface][7]))
+				else:
+					outfile.write(' {0:2s} {1:11d}{2:1d}{3:18.11e}{4:18.11e}{5:18.11e}{6:18.11e}{7:18.11e}\n'.format(
+						data.elem[iel].bcs[ibc, iface][0], data.elem[iel].bcs[ibc, iface][1], data.elem[iel].bcs[ibc, iface][2], data.elem[iel].bcs[ibc, iface][3], data.elem[iel].bcs[ibc, iface][4], data.elem[iel].bcs[ibc, iface][5], data.elem[iel].bcs[ibc, iface][6], data.elem[iel].bcs[ibc, iface][7]))
 
-	outfile.write('  ***** NO THERMAL BOUNDARY CONDITIONS *****\n')
+	if data.nbc < 2:
+		outfile.write('  ***** NO THERMAL BOUNDARY CONDITIONS *****\n')
 	outfile.write('    0 PRESOLVE/RESTART OPTIONS  *****\n')
 	outfile.write('    7         INITIAL CONDITIONS *****\n')
 	outfile.write(' C Default\n')

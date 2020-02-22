@@ -2,9 +2,7 @@
 # test nek scripts
 #
 def test_readnek():
-	import sys
-	sys.path.append('./src/')
-	import neksuite as ns
+	import pymech.neksuite as ns
 
 	fname = './tests/nek/channel3D_0.f00001'
 	field = ns.readnek(fname)
@@ -20,9 +18,7 @@ def test_readnek():
 	
 
 def test_writenek():
-	import sys
-	sys.path.append('./src/')
-	import neksuite as ns
+	import pymech.neksuite as ns
 
 	fname = './tests/nek/channel3D_0.f00001'
 	field = ns.readnek(fname)
@@ -49,9 +45,7 @@ def test_writenek():
 	
 	
 def test_readrea():
-	import sys
-	sys.path.append('./src/')
-	import neksuite as ns
+	import pymech.neksuite as ns
 
 	fname = './tests/nek/2D_section_R360.rea'
 	field = ns.readrea(fname)
@@ -67,19 +61,23 @@ def test_readrea():
 	field = ns.readrea(fname)
 	assert field.elem[790].ccurv[0] == 'm'
 	assert abs(field.elem[790].curv[0][1] + 0.05258981) < 1e-7
-	assert field.elem[0].bcs[0][0] == 'W'
-	assert field.elem[0].bcs[1][0] == 'o'
-	assert field.elem[0].bcs[2][0] == 'E'
-	assert field.elem[0].bcs[2][1] == 1
-	assert field.elem[0].bcs[2][2] == 3
-	assert int(field.elem[0].bcs[2][3]) == 2
-	assert int(field.elem[0].bcs[2][4]) == 1
+	assert field.elem[0].bcs[0, 0][0] == 'W'
+	assert field.elem[0].bcs[0, 1][0] == 'o'
+	assert field.elem[0].bcs[0, 2][0] == 'E'
+	assert field.elem[0].bcs[0, 2][1] == 1
+	assert field.elem[0].bcs[0, 2][2] == 3
+	assert int(field.elem[0].bcs[0, 2][3]) == 2
+	assert int(field.elem[0].bcs[0, 2][4]) == 1
+	assert int(field.elem[799].bcs[1, 1][3]) == 790
+	assert field.elem[799].bcs[1, 2][0] == 't'
+	assert field.elem[799].bcs[1, 3][0] == 'I'
+	assert int(field.elem[799].bcs[2, 1][3]) == 790
+	assert field.elem[799].bcs[2, 2][0] == 'P'
+	assert field.elem[799].bcs[2, 3][0] == 'P'
 
 
 def test_writerea():
-	import sys
-	sys.path.append('./src/')
-	import neksuite as ns
+	import pymech.neksuite as ns
 
 	fname = './tests/nek/2D_section_R360.rea'
 	field = ns.readrea(fname)
@@ -112,22 +110,26 @@ def test_writerea():
 	
 	assert fieldw.elem[790].ccurv[0] == 'm'
 	assert abs(fieldw.elem[790].curv[0][1] + 0.05258981) < 1e-7
-	assert fieldw.elem[0].bcs[0][0] == 'W'
-	assert fieldw.elem[0].bcs[1][0] == 'o'
-	assert fieldw.elem[0].bcs[2][0] == 'E'
-	assert fieldw.elem[0].bcs[2][1] == 1
-	assert fieldw.elem[0].bcs[2][2] == 3
-	assert int(fieldw.elem[0].bcs[2][3]) == 2
-	assert int(fieldw.elem[0].bcs[2][4]) == 1
+	assert fieldw.elem[0].bcs[0, 0][0] == 'W'
+	assert fieldw.elem[0].bcs[0, 1][0] == 'o'
+	assert fieldw.elem[0].bcs[0, 2][0] == 'E'
+	assert fieldw.elem[0].bcs[0, 2][1] == 1
+	assert fieldw.elem[0].bcs[0, 2][2] == 3
+	assert int(fieldw.elem[0].bcs[0, 2][3]) == 2
+	assert int(fieldw.elem[0].bcs[0, 2][4]) == 1
+	assert int(field.elem[799].bcs[1, 1][3]) == 790
+	assert fieldw.elem[799].bcs[1, 2][0] == 't'
+	assert fieldw.elem[799].bcs[1, 3][0] == 'I'
+	assert int(fieldw.elem[799].bcs[2, 1][3]) == 790
+	assert fieldw.elem[799].bcs[2, 2][0] == 'P'
+	assert fieldw.elem[799].bcs[2, 3][0] == 'P'
 
 
 #------------------------------------------------------------------------------
 # test simson scripts
 #
 def test_readdns():
-	import sys
-	sys.path.append('./src/')
-	import simsonsuite as ss
+	import pymech.simsonsuite as ss
 
 	fname = './tests/simson/channel3D_t10000v.u'
 	field = ss.readdns(fname)
@@ -143,9 +145,7 @@ def test_readdns():
 
 
 def test_readplane():
-	import sys
-	sys.path.append('./src/')
-	import simsonsuite as ss
+	import pymech.simsonsuite as ss
 
 	fname = './tests/simson/u.plane'
 	x, d, nn, ndim = ss.readplane(fname)
