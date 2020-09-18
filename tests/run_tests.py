@@ -1,3 +1,7 @@
+import math
+import numpy as np
+import time
+
 #------------------------------------------------------------------------------
 # test nek scripts
 #
@@ -15,21 +19,25 @@ def test_readnek():
 	assert field.var    == [3, 3, 1, 0, 0]
 	assert field.wdsz   == 4
 	assert (field.time - 0.2) < 1e-3
-	
+
 
 def test_writenek():
 	import pymech.neksuite as ns
 
 	fname = './tests/nek/channel3D_0.f00001'
+	time0 = time.perf_counter()
 	field = ns.readnek(fname)
+	time1 = time.perf_counter()
 
 	fnamew = './test_0.f00001'
 	status = ns.writenek(fnamew, field)
-	
+	time2 = time.perf_counter()
+	print('readnek: {:.6e} s; writenek: {:.6e} s'.format(time1-time0, time2-time1))
+
 	assert status == 0
-	
+
 	fieldw = ns.readnek(fnamew)
-	
+
 	assert field.endian == fieldw.endian
 	assert field.istep  == fieldw.istep
 	assert field.lr1    == fieldw.lr1
@@ -42,8 +50,37 @@ def test_writenek():
 	assert field.lims.vel.all()  == fieldw.lims.vel.all()
 	assert field.lims.pres.all() == fieldw.lims.pres.all()
 	assert field.lims.scal.all() == fieldw.lims.scal.all()
-	
-	
+	assert np.abs(field.elem[123].vel - fieldw.elem[123].vel).max() < 1e-9
+	assert np.abs(field.elem[-1].pos - fieldw.elem[-1].pos).max() < 1e-9
+	assert np.abs(field.elem[-1].pres - fieldw.elem[-1].pres).max() < 1e-9
+
+
+def test_readnek_scalars():
+	import pymech.neksuite as ns
+
+	# 2D statistics file
+	fname = './tests/nek/stsabl0.f00001'
+	field = ns.readnek(fname)
+
+	ux_min, ux_max = field.lims.scal[0]
+	assert math.isclose(ux_max, 5.3, abs_tol=0.1)
+
+
+def test_writenek_scalars():
+	import pymech.neksuite as ns
+
+	fname = './tests/nek/stsabl0.f00001'
+	field = ns.readnek(fname)
+
+	fnamew = './test_sts_0.f00001'
+	status = ns.writenek(fnamew, field)
+
+	assert status == 0
+
+	fieldw = ns.readnek(fnamew)
+	np.testing.assert_array_equal(field.lims.scal, fieldw.lims.scal)
+
+
 def test_readrea():
 	import pymech.neksuite as ns
 
@@ -56,7 +93,7 @@ def test_readrea():
 	assert abs(field.elem[0].pos[0][0][0][0] - 0.048383219999999998 ) < 1e-3
 	assert abs(field.elem[887].curv[1, 0] - 1.21664) < 1e-3
 	assert field.elem[887].ccurv[1] == 'C'
-	
+
 	fname = './tests/nek/m3j_bf_test.rea'
 	field = ns.readrea(fname)
 	assert field.elem[790].ccurv[0] == 'm'
@@ -100,14 +137,14 @@ def test_writerea():
 
 	fname = './tests/nek/m3j_bf_test.rea'
 	fnamew = 'test.rea'
-	
+
 	field = ns.readrea(fname)
 	status = ns.writerea(fnamew, field)
 
 	assert status == 0
 
 	fieldw = ns.readrea(fnamew)
-	
+
 	assert fieldw.elem[790].ccurv[0] == 'm'
 	assert abs(fieldw.elem[790].curv[0][1] + 0.05258981) < 1e-7
 	assert fieldw.elem[0].bcs[0, 0][0] == 'W'
@@ -156,6 +193,21 @@ def test_readplane():
 	assert nn[1] == 97.
 	assert ndim  == 2
 
+#------------------------------------------------------------------------------
+# test xarray dataset interface
+#
+def test_nekdataset():
+	import pymech.dataset as pd
+
+	fname = './tests/nek/channel3D_0.f00001'
+	ds = pd.open_dataset(fname)
+
+	assert tuple(ds.dims.values()) == (64, 64, 64)
+	assert math.isclose(ds.x.max(), 2 * math.pi, abs_tol=1e-6)
+	assert math.isclose(ds.y.max(), 1., abs_tol=1e-6)
+	assert math.isclose(ds.z.max(), math.pi, abs_tol=1e-6)
+	assert math.isclose(ds.time, 0.2, abs_tol=1e-6)
+
 #==============================================================================
 # run tests
 #
@@ -163,8 +215,12 @@ if __name__ == "__main__":
 
 	test_readnek()
 	test_writenek()
+	test_readnek_scalars()
+	test_writenek_scalars()
 	test_readrea()
 	test_writerea()
 
 	test_readdns()
 	test_readplane()
+
+	test_nekdataset()

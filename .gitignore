@@ -10,6 +10,14 @@
 *.pyc
 .cache
 __pycache__
+*.egg-info
+pymech/_version.py
+.eggs
 
 # documentation (sphinx) stuff
 docs/_build
+.ipynb_checkpoints
+
+# test related
+test.rea
+test*.f*

@@ -13,12 +13,12 @@ import pymech.exadata as exdat
 
 #==============================================================================
 def readdns(fname):
-	"""
-	    readdns(fname)
-	    A function for reading binary data from the SIMSON binary format
+	"""A function for reading binary data from the SIMSON binary format
 
-	    input variable:
-	    fname : file name
+	Parameters
+	----------
+	fname : str
+		file name
 	"""
 	#
 	try:
@@ -149,7 +149,7 @@ def readdns(fname):
 	var = [0 for i in range(5)]
 	var[0] = ndim  # position
 	var[1] = ndim  # velocity
-	var[2] = 0     # pressure is not saved (SIMSON) 
+	var[2] = 0     # pressure is not saved (SIMSON)
 	var[3] = 0     # temperature is treated like a scalar (SIMSON)
 	var[4] = nscal # scalars
 	#
@@ -231,7 +231,7 @@ def readdns(fname):
 		data.elem[0].scal[ivar,:,:,:] = np.fft.irfft2(fou,(lr1[0],lr1[2]),(2,0))
 	#
 	#---------------------------------------------------------------------------
-	# CLOSE FILE 
+	# CLOSE FILE
 	#---------------------------------------------------------------------------
 	#
 	# close file
@@ -243,12 +243,12 @@ def readdns(fname):
 
 #==============================================================================
 def readplane(fname):
-	"""
-	    readplane(fname)
-	    A function for reading binary data from SIMSON's (pxyst) plane files
-	
-	    input variable:
-	    fname : file name
+	"""A function for reading binary data from SIMSON's (pxyst) plane files
+
+	Parameters
+	----------
+	fname : str
+		file name
 	"""
 	#
 	try:
@@ -354,7 +354,7 @@ def readplane(fname):
 		d = np.reshape(dd, (nn[0],nn[1],nn[2]),'F')
 	#
 	#---------------------------------------------------------------------------
-	# CLOSE FILE 
+	# CLOSE FILE
 	#---------------------------------------------------------------------------
 	#
 	# close file

@@ -13,13 +13,14 @@ from tvtk.api import tvtk
 
 #==============================================================================
 def exa2vtk(field, downsample):
-	"""
-	    exa2vtk
-	    A function for converting exadata to vtk data
+	"""A function for converting exadata to vtk data
 
-	    input variables:
-		 field : a dataset in nekdata format
-		 downsample : flag T/F
+	Parameters
+	----------
+	field : str
+		a dataset in nekdata format
+	downsample : bool
+		flag T/F
 	"""
 	#
 	if (downsample):
@@ -85,7 +86,7 @@ def exa2vtk(field, downsample):
 							ce[ice + face*4 + 2] = iel*nppel + ix+1 +  iy   *nix + (iz+face)*nix*niy
 							ce[ice + face*4 + 3] = iel*nppel + ix+1 + (iy+1)*nix + (iz+face)*nix*niy
 							ce[ice + face*4 + 4] = iel*nppel + ix   + (iy+1)*nix + (iz+face)*nix*niy
-	
+
 	# create the array of cells
 	ca = tvtk.CellArray()
 	ca.set_cells(nel, ce)

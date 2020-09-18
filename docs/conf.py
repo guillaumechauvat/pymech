@@ -12,19 +12,33 @@
 #
 import os
 import sys
-# sys.path.insert(0, os.path.abspath('.'))
+from datetime import date
+try:
+    from importlib import metadata
+except ImportError:
+    # Running on pre-3.8 Python; use importlib-metadata package
+    import importlib_metadata as metadata
 
+
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
 project = 'pymech'
-copyright = '2020, Jacopo Canton, Nicolo Fabbiane and Guillaume Chauvat'
-author = 'Jacopo Canton, Nicolo Fabbiane and Guillaume Chauvat'
+_meta = metadata.metadata(project)
+_today = date.today()
+
+author = _meta.get('Author')
+copyright = f"{_today.year}, {author}"
 master_doc = 'index'
 
 # The full version, including alpha/beta/rc tags
-release = '1.2'
+release = _meta.get('Version')
 
+rst_prolog = f"""
+.. |author| replace:: {author}
+.. |today| replace:: {_today}
+"""
 
 # -- General configuration ---------------------------------------------------
 
@@ -33,10 +47,14 @@ release = '1.2'
 # ones.
 extensions = [
     'recommonmark',
+	'nbsphinx',
+	'sphinx.ext.autodoc',
+    #  'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
+	'sphinx.ext.napoleon',  # Numpy-style docstrings
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
 ]
@@ -57,9 +75,18 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'default'
+html_theme = 'sphinx_rtd_theme'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
+
+# -- Other options -----------------------------------------------------------
+#  autosummary_generate = True
+
+autodoc_default_options = {
+    "members": True,
+}
+
+autodoc_mock_imports = ["tvtk", "xarray", "pymech._version"]
